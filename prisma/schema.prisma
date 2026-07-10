@@ -17,6 +17,7 @@ model Organization {
   movements      StockMovement[]
   members        Profile[]
   purchaseOrders PurchaseOrder[]
+  salesOrders    SalesOrder[]
 
   @@map("organizations")
 }
@@ -52,8 +53,9 @@ model Product {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  movements     StockMovement[]
-  poLineItems   POLineItem[]
+  movements   StockMovement[]
+  poLineItems POLineItem[]
+  soLineItems SOLineItem[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -116,4 +118,40 @@ model POLineItem {
   quantity        Int
 
   @@map("po_line_items")
+}
+
+enum SOStatus {
+  DRAFT
+  CONFIRMED
+  DISPATCHED
+  CANCELLED
+}
+
+model SalesOrder {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  soNumber       String       @map("so_number")
+  customer       String
+  status         SOStatus     @default(DRAFT)
+  deliveryDate   DateTime?    @map("delivery_date")
+  notes          String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  lineItems SOLineItem[]
+
+  @@index([organizationId])
+  @@map("sales_orders")
+}
+
+model SOLineItem {
+  id           String     @id @default(uuid())
+  salesOrderId String     @map("sales_order_id")
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId    String     @map("product_id")
+  product      Product    @relation(fields: [productId], references: [id])
+  quantity     Int
+
+  @@map("so_line_items")
 }

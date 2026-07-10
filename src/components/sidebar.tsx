@@ -17,7 +17,7 @@ const nav = [
   { href: "/products", label: "Products", icon: Package, ready: true },
   { href: "/movements", label: "Stock movements", icon: ArrowLeftRight, ready: true },
   { href: "/purchase-orders", label: "Purchase orders", icon: Truck, ready: true },
-  { href: "/sales-orders", label: "Sales orders", icon: ShoppingCart, ready: false, day: "Day 5" },
+  { href: "/sales-orders", label: "Sales orders", icon: ShoppingCart, ready: true },
 ];
 
 export function Sidebar({ email }: { email: string }) {
