@@ -16,7 +16,7 @@ const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, ready: true },
   { href: "/products", label: "Products", icon: Package, ready: true },
   { href: "/movements", label: "Stock movements", icon: ArrowLeftRight, ready: true },
-  { href: "/purchase-orders", label: "Purchase orders", icon: Truck, ready: false, day: "Day 4" },
+  { href: "/purchase-orders", label: "Purchase orders", icon: Truck, ready: true },
   { href: "/sales-orders", label: "Sales orders", icon: ShoppingCart, ready: false, day: "Day 5" },
 ];
 

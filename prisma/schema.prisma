@@ -1,16 +1,11 @@
-// StockFlow ERP — Day 1 schema
-// Scope: products + stock movements only.
-// organizationId is included now (even though Day 1 is single-org) so we
-// never have to retrofit multi-tenancy later — that's the #1 thing that
-// breaks if bolted on after the fact.
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Organization {
@@ -18,17 +13,16 @@ model Organization {
   name      String
   createdAt DateTime @default(now())
 
-  products  Product[]
-  movements StockMovement[]
-  members   Profile[]
+  products       Product[]
+  movements      StockMovement[]
+  members        Profile[]
+  purchaseOrders PurchaseOrder[]
 
   @@map("organizations")
 }
 
-// Mirrors Supabase auth.users — created on first login via a trigger
-// or app-side upsert. id matches the Supabase auth user id.
 model Profile {
-  id             String       @id // matches Supabase auth.users.id
+  id             String       @id
   email          String       @unique
   fullName       String?      @map("full_name")
   role           Role         @default(WAREHOUSE_STAFF)
@@ -46,24 +40,20 @@ enum Role {
 }
 
 model Product {
-  id             String   @id @default(uuid())
-  organizationId String   @map("organization_id")
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
   organization   Organization @relation(fields: [organizationId], references: [id])
-
   sku            String
   name           String
-  unit           String   @default("pcs") // pcs, kg, box, etc.
+  unit           String       @default("pcs")
   category       String?
-  reorderLevel   Int      @default(0) @map("reorder_level")
+  reorderLevel   Int          @default(0) @map("reorder_level")
+  onHand         Int          @default(0) @map("on_hand")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  // Denormalized running balance — updated on every stock movement.
-  // Avoids summing the whole movement log for every dashboard load.
-  onHand         Int      @default(0) @map("on_hand")
-
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  movements      StockMovement[]
+  movements     StockMovement[]
+  poLineItems   POLineItem[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -71,26 +61,59 @@ model Product {
 }
 
 enum MovementType {
-  IN  // stock received (e.g. from a PO, or manual receipt)
-  OUT // stock dispatched (e.g. from an SO, or manual issue)
+  IN
+  OUT
 }
 
 model StockMovement {
   id             String       @id @default(uuid())
   organizationId String       @map("organization_id")
   organization   Organization @relation(fields: [organizationId], references: [id])
-
   productId      String       @map("product_id")
   product        Product      @relation(fields: [productId], references: [id])
-
   type           MovementType
-  quantity       Int          // always positive; direction comes from `type`
-  reference      String?      // free-text note: "PO-1042", "manual count", etc.
-  balanceAfter   Int          @map("balance_after") // on-hand snapshot post-movement
-
+  quantity       Int
+  reference      String?
+  balanceAfter   Int          @map("balance_after")
   createdById    String?      @map("created_by_id")
   createdAt      DateTime     @default(now()) @map("created_at")
 
   @@index([organizationId, productId])
   @@map("stock_movements")
+}
+
+enum POStatus {
+  DRAFT
+  ORDERED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  poNumber       String       @map("po_number")
+  supplier       String
+  status         POStatus     @default(DRAFT)
+  expectedDate   DateTime?    @map("expected_date")
+  notes          String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  lineItems POLineItem[]
+
+  @@index([organizationId])
+  @@map("purchase_orders")
+}
+
+model POLineItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String        @map("purchase_order_id")
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String        @map("product_id")
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Int
+
+  @@map("po_line_items")
 }
