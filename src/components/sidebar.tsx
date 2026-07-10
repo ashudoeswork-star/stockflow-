@@ -47,23 +47,6 @@ export function Sidebar({ email }: { email: string }) {
           const Icon = item.icon;
           const active = pathname === item.href;
 
-          if (!item.ready) {
-            return (
-              <div
-                key={item.href}
-                className="flex items-center justify-between rounded px-3 py-2 text-sm text-graphite-300"
-              >
-                <span className="flex items-center gap-2.5">
-                  <Icon size={16} />
-                  {item.label}
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-wide text-graphite-300">
-                  {item.day}
-                </span>
-              </div>
-            );
-          }
-
           return (
             <Link
               key={item.href}
